@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { stories } from "./stories.js";
 import StoryArt from "./StoryArt.jsx";
 import { speakSequence, speakWord, stopSpeaking } from "./speech.js";
+import { ButtonFace, Icon } from "./icons.jsx";
 
 function mix(items) {
   const copy = [...items];
@@ -17,15 +18,6 @@ function partsOf(sentence) {
     show: part,
     say: part.replace(/[^A-Za-z']/g, ""),
   }));
-}
-
-function Speaker() {
-  return (
-    <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
-      <path d="M3 9h4l6-5v16l-6-5H3z" fill="currentColor" />
-      <path d="M16 8a5 5 0 0 1 0 8" fill="none" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
 }
 
 export default function StoryTime({ onBack }) {
@@ -109,14 +101,14 @@ export default function StoryTime({ onBack }) {
       <main className="app">
         <div className="top">
           <button type="button" className="big alt grades" onClick={onBack}>
-            Back
+            <ButtonFace icon="home">Back</ButtonFace>
           </button>
         </div>
         <h1>Story Time</h1>
         <div className="stack">
           {stories.map((item) => (
             <button key={item.id} type="button" className="big story-name" onClick={() => open(item)}>
-              {item.title}
+              <ButtonFace icon={item.id}>{item.title}</ButtonFace>
             </button>
           ))}
         </div>
@@ -134,7 +126,7 @@ export default function StoryTime({ onBack }) {
         </div>
         <h1>You did it!</h1>
         <button type="button" className="big" onClick={backToList}>
-          Stories
+          <ButtonFace icon="book">Stories</ButtonFace>
         </button>
       </main>
     );
@@ -146,7 +138,7 @@ export default function StoryTime({ onBack }) {
       <main className="app">
         <div className="top">
           <button type="button" className="big alt grades" onClick={() => setView("read")}>
-            Back
+            <ButtonFace icon="back">Back</ButtonFace>
           </button>
           <div className="progress">
             {question + 1} of {story.questions.length}
@@ -154,7 +146,7 @@ export default function StoryTime({ onBack }) {
         </div>
         <p className="prompt">{current.prompt}</p>
         <button type="button" className="big speak" onClick={() => speakWord(current.prompt)}>
-          Read it to me
+          <ButtonFace icon="speaker">Read it to me</ButtonFace>
         </button>
         <div className="stack">
           {choices.map((choice) => (
@@ -165,10 +157,10 @@ export default function StoryTime({ onBack }) {
                 aria-label={`Read ${choice.text}`}
                 onClick={() => speakWord(choice.text)}
               >
-                <Speaker />
+                <Icon name="speaker" />
               </button>
               <button type="button" className="big choice-main" onClick={() => answer(choice)}>
-                {choice.text}
+                <ButtonFace icon="choose">{choice.text}</ButtonFace>
               </button>
             </div>
           ))}
@@ -182,7 +174,7 @@ export default function StoryTime({ onBack }) {
     <main className="app">
       <div className="top">
         <button type="button" className="big alt grades" onClick={backToList}>
-          Back
+          <ButtonFace icon="back">Back</ButtonFace>
         </button>
       </div>
       <h1>{story.title}</h1>
@@ -202,10 +194,10 @@ export default function StoryTime({ onBack }) {
         </div>
       ))}
       <button type="button" className="big speak" onClick={readAll}>
-        Read it to me
+        <ButtonFace icon="speaker">Read it to me</ButtonFace>
       </button>
       <button type="button" className="big" onClick={startQuestions}>
-        Questions
+        <ButtonFace icon="questions">Questions</ButtonFace>
       </button>
     </main>
   );

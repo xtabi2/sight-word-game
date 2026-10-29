@@ -55,9 +55,16 @@ h1 {
 }
 
 .big {
-  min-height: 80px;
-  font-size: 1.8rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 108px;
+  padding: 12px 14px;
+  font-size: 1.7rem;
   font-weight: 700;
+  line-height: 1.1;
   border: none;
   border-radius: 20px;
   background: #42a5f5;
@@ -65,6 +72,41 @@ h1 {
   cursor: pointer;
   box-shadow: 0 5px #1e88e5;
   touch-action: manipulation;
+}
+
+.app > .big,
+.play > .big,
+.grid > .big,
+.stack > .big,
+.nav > .big {
+  width: 100%;
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  display: block;
+}
+
+.btn-text {
+  max-width: 100%;
+}
+
+.icon-badge {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 3px #ffe082;
+}
+
+.icon-badge .icon {
+  width: 46px;
+  height: 46px;
 }
 
 .big:active:not(:disabled) {
@@ -91,9 +133,14 @@ h1 {
 .big.speak {
   background: #26a69a;
   box-shadow: 0 5px #00897b;
-  min-height: 88px;
-  font-size: 2rem;
+  min-height: 124px;
+  font-size: 1.85rem;
   width: 100%;
+}
+
+.big.speak .icon {
+  width: 58px;
+  height: 58px;
 }
 
 .big.speak:active:not(:disabled) {
@@ -132,10 +179,18 @@ h1 {
 }
 
 .grades {
+  flex-direction: row;
+  width: auto;
   min-height: 56px;
-  padding: 0 18px;
+  padding: 0 16px;
   font-size: 1.2rem;
+  gap: 8px;
   flex: 0 0 auto;
+}
+
+.grades .icon {
+  width: 32px;
+  height: 32px;
 }
 
 .card {
@@ -174,6 +229,12 @@ h1 {
   gap: 16px;
 }
 
+.nav > .big {
+  min-height: 112px;
+  font-size: 1.2rem;
+  padding: 10px 6px;
+}
+
 .stack {
   display: grid;
   gap: 16px;
@@ -181,9 +242,21 @@ h1 {
 }
 
 .story-name {
-  font-size: 1.45rem;
-  line-height: 1.25;
-  padding: 12px 16px;
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 14px;
+  font-size: 1.35rem;
+  line-height: 1.2;
+  padding: 12px 14px;
+  min-height: 88px;
+}
+
+.story-name .btn-text,
+.choice-main .btn-text {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
 }
 
 .stage {
@@ -255,9 +328,13 @@ h1 {
 }
 
 .chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   min-height: 64px;
   min-width: 72px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: 16px;
   border: 4px solid #ffca28;
   background: #fff;
@@ -265,6 +342,11 @@ h1 {
   font-size: 1.5rem;
   font-weight: 700;
   touch-action: none;
+}
+
+.chip .icon {
+  width: 28px;
+  height: 28px;
 }
 
 .line {
@@ -299,8 +381,12 @@ h1 {
 }
 
 .hear {
-  flex: 0 0 64px;
-  min-height: 64px;
+  flex: 0 0 72px;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   border: 0;
   border-radius: 16px;
   background: #26a69a;
@@ -308,11 +394,26 @@ h1 {
   box-shadow: 0 5px #00897b;
 }
 
+.hear .icon {
+  width: 46px;
+  height: 46px;
+}
+
 .choice-main {
   flex: 1;
-  font-size: 1.35rem;
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 10px;
+  min-height: 72px;
+  font-size: 1.25rem;
   line-height: 1.2;
   padding: 10px 12px;
+}
+
+.choice-main .icon {
+  width: 36px;
+  height: 36px;
 }
 
 .celebrate {

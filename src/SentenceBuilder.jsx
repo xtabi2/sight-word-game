@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { formatSentence, gradeSentence } from "./grade-sentence.js";
 import { setsFor } from "./sentence-sets.js";
 import { speakWord, stopSpeaking } from "./speech.js";
+import { ButtonFace, Icon } from "./icons.jsx";
 
 function mix(words, tries = 0) {
   const copy = [...words];
@@ -42,7 +43,7 @@ export default function SentenceBuilder({ deck, onBack }) {
         <h1>{deck.label}</h1>
         <p className="sub">Try another deck</p>
         <button type="button" className="big alt" onClick={onBack}>
-          Back
+          <ButtonFace icon="back">Back</ButtonFace>
         </button>
       </main>
     );
@@ -131,7 +132,7 @@ export default function SentenceBuilder({ deck, onBack }) {
     <main className="app play">
       <div className="top">
         <button type="button" className="big alt grades" onClick={onBack}>
-          Back
+          <ButtonFace icon="back">Back</ButtonFace>
         </button>
         <div className="progress">
           <span>{deck.label}</span>
@@ -140,7 +141,8 @@ export default function SentenceBuilder({ deck, onBack }) {
       <div className="chips" aria-label="Words">
         {bank.map((word) => (
           <button key={word} type="button" className="chip" onClick={() => addWord(word)}>
-            {word}
+            <Icon name="add" />
+            <span>{word}</span>
           </button>
         ))}
       </div>
@@ -162,18 +164,18 @@ export default function SentenceBuilder({ deck, onBack }) {
       </div>
       {note && <p className={note.ok ? "note ok" : "note"}>{note.message}</p>}
       <button type="button" className="big speak" onClick={readAloud} disabled={!built.length}>
-        Read it to me
+        <ButtonFace icon="speaker">Read it to me</ButtonFace>
       </button>
       <div className="nav">
         <button type="button" className="big" onClick={check} disabled={!built.length}>
-          Check
+          <ButtonFace icon="check">Check</ButtonFace>
         </button>
         <button type="button" className="big alt" onClick={clearAll}>
-          Clear
+          <ButtonFace icon="clear">Clear</ButtonFace>
         </button>
       </div>
       <button type="button" className="big" onClick={nextSet}>
-        New words
+        <ButtonFace icon="shuffle">New words</ButtonFace>
       </button>
     </main>
   );

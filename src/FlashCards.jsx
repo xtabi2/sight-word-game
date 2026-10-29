@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { speakWord, stopSpeaking } from "./speech.js";
+import { ButtonFace } from "./icons.jsx";
 
 const SWIPE_PX = 48;
 
@@ -97,7 +98,7 @@ export default function FlashCards({ deck, onBack }) {
     >
       <div className="top">
         <button type="button" className="big alt grades" onClick={onBack}>
-          Back
+          <ButtonFace icon="back">Back</ButtonFace>
         </button>
         <div className="progress">
           <span>{deck.label}</span>
@@ -112,14 +113,14 @@ export default function FlashCards({ deck, onBack }) {
         </span>
       </div>
       <button type="button" className={`big speak${speaking ? " speaking" : ""}`} onClick={readAloud}>
-        Read it to me
+        <ButtonFace icon="speaker">Read it to me</ButtonFace>
       </button>
       <div className="nav">
         <button type="button" className="big" onClick={() => go(-1)} disabled={atStart}>
-          Previous
+          <ButtonFace icon="back">Previous</ButtonFace>
         </button>
         <button type="button" className="big" onClick={() => go(1)} disabled={atEnd}>
-          Next
+          <ButtonFace icon="next">Next</ButtonFace>
         </button>
       </div>
     </main>

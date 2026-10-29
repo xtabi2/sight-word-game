@@ -4,6 +4,9 @@ import { allClassWords, lessons } from "./class-words.js";
 import FlashCards from "./FlashCards.jsx";
 import SentenceBuilder from "./SentenceBuilder.jsx";
 import StoryTime from "./StoryTime.jsx";
+import { ButtonFace } from "./icons.jsx";
+
+const gradeMark = { k: "K", 1: "1", 2: "2", 3: "3" };
 
 export default function App() {
   const [screen, setScreen] = useState("home");
@@ -61,14 +64,14 @@ export default function App() {
       <main className="app">
         <div className="top">
           <button type="button" className="big alt grades" onClick={() => setScreen("decks")}>
-            Back
+            <ButtonFace icon="back">Back</ButtonFace>
           </button>
         </div>
         <h1>Class Words</h1>
         <div className="grid">
-          {lessons.map((lesson) => (
+          {lessons.map((lesson, index) => (
             <button key={lesson.id} type="button" className="big" onClick={() => openLesson(lesson)}>
-              {lesson.label}
+              <ButtonFace icon={`badge-${index + 1}`}>{lesson.label}</ButtonFace>
             </button>
           ))}
           <button
@@ -83,7 +86,7 @@ export default function App() {
               })
             }
           >
-            All together
+            <ButtonFace icon="together">All together</ButtonFace>
           </button>
         </div>
       </main>
@@ -95,18 +98,18 @@ export default function App() {
       <main className="app">
         <div className="top">
           <button type="button" className="big alt grades" onClick={() => setScreen("home")}>
-            Back
+            <ButtonFace icon="home">Back</ButtonFace>
           </button>
         </div>
         <h1>{mode === "sentence" ? "Build a Sentence" : "Flash Cards"}</h1>
         <div className="grid">
           {grades.map((grade) => (
             <button key={grade.id} type="button" className="big" onClick={() => openGrade(grade)}>
-              {grade.label}
+              <ButtonFace icon={`badge-${gradeMark[grade.id] ?? grade.id}`}>{grade.label}</ButtonFace>
             </button>
           ))}
           <button type="button" className="big alt wide" onClick={() => setScreen("class")}>
-            Class Words
+            <ButtonFace icon="abc">Class Words</ButtonFace>
           </button>
         </div>
       </main>
@@ -118,13 +121,13 @@ export default function App() {
       <h1>Sight Words</h1>
       <div className="stack">
         <button type="button" className="big" onClick={() => pickMode("cards")}>
-          Flash Cards
+          <ButtonFace icon="cards">Flash Cards</ButtonFace>
         </button>
         <button type="button" className="big" onClick={() => pickMode("sentence")}>
-          Build a Sentence
+          <ButtonFace icon="sentence">Build a Sentence</ButtonFace>
         </button>
         <button type="button" className="big" onClick={() => setScreen("stories")}>
-          Story Time
+          <ButtonFace icon="book">Story Time</ButtonFace>
         </button>
       </div>
     </main>
