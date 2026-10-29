@@ -1,15 +1,25 @@
 let request = 0;
 let boundSynth = null;
+let bindId = 0;
 const waiters = new Set();
 
-// Known female English voices, best first, across iOS, macOS, Chrome, Android, and Edge.
+const RATE = 0.85;
+const NORMAL_PITCH = 1;
+// Last resort when no female voice can be selected. Android Chrome usually
+// cannot switch the system TTS voice, and a higher pitch is what changes the sound.
+export const FALLBACK_PITCH = 1.4;
+export const VOICE_WAIT_MS = 800;
+
+// Known female English voices, best first. These are personal or product names,
+// not language labels. "English United States" is a language slot on Android,
+// and Chrome plays whatever voice is selected in system TTS settings.
 export const FEMALE_VOICE_PREFERENCES = [
   "Samantha",
   "Karen",
   "Moira",
   "Tessa",
-  "Google US English",
   "Google UK English Female",
+  "Google US English",
   "Microsoft Aria",
   "Microsoft Jenny",
   "Jenny",
@@ -37,11 +47,43 @@ export const FEMALE_VOICE_PREFERENCES = [
   "Microsoft Heera",
   "Microsoft Linda",
   "Samsung English Female",
-  "English United States",
 ];
 
-function voiceName(voice) {
-  return String(voice?.name || "");
+// Google TTS codes. sfg without a male marker is the US female voice.
+// iob / iog / iol / iom are the common US male codes. tpf is omitted because
+// published lists disagree about its gender.
+const MALE_VOICE_CODES = ["iob", "iog", "iol", "iom"];
+
+function asVoiceArray(voices) {
+  if (!voices) return [];
+  if (Array.isArray(voices)) return voices;
+  if (typeof voices.length === "number") {
+    try {
+      return Array.from(voices);
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function identityText(voice) {
+  return `${voice?.name || ""} ${voice?.voiceURI || ""}`
+    .toLowerCase()
+    .replace(/[_#.-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function textHas(text, phrase) {
+  const needle = String(phrase || "")
+    .toLowerCase()
+    .replace(/[_#.-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!needle) return false;
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s+");
+  return new RegExp(`(?:^|\\s)${escaped}(?:\\s|$)`, "i").test(` ${text} `);
 }
 
 function isEnglish(voice) {
@@ -49,58 +91,103 @@ function isEnglish(voice) {
   return lang.startsWith("en");
 }
 
-function isMaleVoice(voice) {
-  const blob = `${voice?.name || ""} ${voice?.voiceURI || ""}`.toLowerCase();
-  if (blob.includes("female")) return false;
-  return /\bmale\b/.test(blob);
-}
-
-function nameHas(voice, preference) {
-  const name = voiceName(voice);
-  const escaped = preference.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`(?:^|[^a-z0-9])${escaped}(?:[^a-z0-9]|$)`, "i");
-  return pattern.test(name);
+export function describeVoice(voice) {
+  const text = identityText(voice);
+  const saysFemale = /\bfemale\b/.test(text) || /\bsiri female\b/.test(text);
+  const saysMale = /\bmale\b/.test(text) || /\bsiri male\b/.test(text);
+  const femaleCode = /\bsfg\b/.test(text);
+  const maleCode = MALE_VOICE_CODES.some((code) => textHas(text, code));
+  return {
+    text,
+    female: (saysFemale || femaleCode) && !saysMale,
+    male: (saysMale || maleCode) && !saysFemale,
+  };
 }
 
 function voiceScore(voice) {
-  const name = voiceName(voice).toLowerCase();
   const lang = String(voice?.lang || "").toLowerCase().replaceAll("_", "-");
+  const name = identityText(voice);
   let score = 0;
-  if (lang === "en-us") score += 3;
+  if (lang === "en-us") score += 5;
+  else if (lang.startsWith("en-us")) score += 4;
+  else if (lang.startsWith("en")) score += 1;
   if (name.includes("natural") || name.includes("enhanced") || name.includes("premium")) score += 2;
+  if (voice?.localService) score += 1;
   return score;
 }
 
-function looksExplicitlyFemale(voice) {
-  const blob = `${voice?.name || ""} ${voice?.voiceURI || ""}`.toLowerCase();
-  if (/\bmale\b/.test(blob.replaceAll("female", ""))) return false;
-  return blob.includes("female") || blob.includes("sfg");
+function best(voices) {
+  if (!voices.length) return null;
+  return [...voices].sort((left, right) => voiceScore(right) - voiceScore(left))[0];
 }
 
 export function pickFemaleVoice(voices) {
-  if (!Array.isArray(voices) || voices.length === 0) return null;
-  const taggedEnglish = voices.filter((voice) => isEnglish(voice));
-  const untagged = voices.filter((voice) => !String(voice?.lang || "").trim());
-  const pool = (taggedEnglish.length ? taggedEnglish : untagged).filter((voice) => !isMaleVoice(voice));
+  const list = asVoiceArray(voices);
+  if (!list.length) return null;
+  const taggedEnglish = list.filter((voice) => isEnglish(voice));
+  const untagged = list.filter((voice) => !String(voice?.lang || "").trim());
+  const pool = (taggedEnglish.length ? taggedEnglish : untagged).filter((voice) => !describeVoice(voice).male);
   if (!pool.length) return null;
 
   for (const preference of FEMALE_VOICE_PREFERENCES) {
-    const matches = pool.filter((voice) => nameHas(voice, preference));
-    if (!matches.length) continue;
-    matches.sort((left, right) => voiceScore(right) - voiceScore(left));
-    return matches[0];
+    const chosen = best(pool.filter((voice) => textHas(describeVoice(voice).text, preference)));
+    if (chosen) return chosen;
   }
 
-  return pool.find((voice) => looksExplicitlyFemale(voice)) ?? null;
+  return best(pool.filter((voice) => describeVoice(voice).female));
+}
+
+function pickEnglishFallback(voices) {
+  const english = asVoiceArray(voices).filter((voice) => isEnglish(voice));
+  if (!english.length) return null;
+  const unmarked = english.filter((voice) => !describeVoice(voice).male);
+  return best(unmarked.length ? unmarked : english);
+}
+
+export function planSpeech(text, voices) {
+  const female = pickFemaleVoice(voices);
+  const voice = female || pickEnglishFallback(voices);
+  return {
+    text,
+    voice: voice || null,
+    voiceURI: voice?.voiceURI || "",
+    lang: voice?.lang || "en-US",
+    rate: RATE,
+    pitch: female ? NORMAL_PITCH : FALLBACK_PITCH,
+    female: Boolean(female),
+  };
+}
+
+function applyPlan(utterance, plan) {
+  utterance.rate = plan.rate;
+  utterance.pitch = plan.pitch;
+  utterance.lang = plan.lang;
+  if (!plan.voice) return utterance;
+  try {
+    utterance.voice = plan.voice;
+  } catch {
+    // A voice object from another document can throw. lang and pitch still apply.
+  }
+  // Set lang again after voice. Android Chrome ignores utterance.voice unless
+  // lang is exactly voice.lang, including an underscore form such as en_US.
+  if (plan.voice.lang) utterance.lang = plan.voice.lang;
+  try {
+    if (plan.voiceURI) utterance.voiceURI = plan.voiceURI;
+  } catch {
+    // voiceURI is not writable in every browser.
+  }
+  return utterance;
 }
 
 function installVoiceListener(synth) {
   if (!synth || boundSynth === synth) return;
   boundSynth = synth;
+  const id = ++bindId;
   const flush = () => {
+    if (id !== bindId) return;
     let voices = [];
     try {
-      voices = synth.getVoices() || [];
+      voices = asVoiceArray(synth.getVoices());
     } catch {
       voices = [];
     }
@@ -125,12 +212,12 @@ function withVoices(mine, run) {
   const synth = window.speechSynthesis;
   const deliver = (voices) => {
     if (mine !== request) return;
-    run(voices || []);
+    run(asVoiceArray(voices));
   };
 
   let ready = [];
   try {
-    ready = synth.getVoices() || [];
+    ready = asVoiceArray(synth.getVoices());
   } catch {
     deliver([]);
     return;
@@ -142,7 +229,7 @@ function withVoices(mine, run) {
 
   installVoiceListener(synth);
   try {
-    ready = synth.getVoices() || [];
+    ready = asVoiceArray(synth.getVoices());
   } catch {
     ready = [];
   }
@@ -162,54 +249,23 @@ function withVoices(mine, run) {
     waiters.delete(waiter);
     let latest = [];
     try {
-      latest = synth.getVoices() || [];
+      latest = asVoiceArray(synth.getVoices());
     } catch {
       latest = [];
     }
     deliver(latest);
-  }, 400);
+  }, VOICE_WAIT_MS);
 }
 
-function prepare(text, voices) {
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US";
-  utterance.rate = 0.85;
+function speak(parts, hooks = {}) {
+  const synth = typeof window === "undefined" ? undefined : window.speechSynthesis;
+  if (!synth || typeof SpeechSynthesisUtterance === "undefined") return false;
+  const mine = ++request;
   try {
-    const voice = pickFemaleVoice(voices);
-    if (voice) utterance.voice = voice;
+    synth.cancel();
   } catch {
-    // An empty or unusual voice list should still leave the words speakable.
+    // cancel can throw if speech was never started.
   }
-  return utterance;
-}
-
-export function speakWord(word, onDone) {
-  const synth = typeof window === "undefined" ? undefined : window.speechSynthesis;
-  if (!synth || typeof SpeechSynthesisUtterance === "undefined") return false;
-  const mine = ++request;
-  synth.cancel();
-  withVoices(mine, (voices) => {
-    if (mine !== request) return;
-    const utterance = prepare(word, voices);
-    let finished = false;
-    const finish = () => {
-      if (finished || mine !== request) return;
-      finished = true;
-      onDone?.();
-    };
-    utterance.onend = finish;
-    utterance.onerror = finish;
-    synth.resume();
-    synth.speak(utterance);
-  });
-  return true;
-}
-
-export function speakSequence(parts, hooks = {}) {
-  const synth = typeof window === "undefined" ? undefined : window.speechSynthesis;
-  if (!synth || typeof SpeechSynthesisUtterance === "undefined") return false;
-  const mine = ++request;
-  synth.cancel();
   withVoices(mine, (voices) => {
     if (mine !== request) return;
     let index = 0;
@@ -220,7 +276,7 @@ export function speakSequence(parts, hooks = {}) {
         return;
       }
       hooks.onStart?.(index);
-      const utterance = prepare(parts[index], voices);
+      const utterance = applyPlan(new SpeechSynthesisUtterance(parts[index]), planSpeech(parts[index], voices));
       const advance = () => {
         if (mine !== request) return;
         index += 1;
@@ -228,7 +284,11 @@ export function speakSequence(parts, hooks = {}) {
       };
       utterance.onend = advance;
       utterance.onerror = advance;
-      synth.resume();
+      try {
+        synth.resume();
+      } catch {
+        // resume is a no-op when nothing is paused.
+      }
       synth.speak(utterance);
     };
     step();
@@ -236,8 +296,24 @@ export function speakSequence(parts, hooks = {}) {
   return true;
 }
 
+export function speakWord(word, onDone) {
+  return speak([word], { onDone });
+}
+
+export function speakSequence(parts, hooks = {}) {
+  return speak(parts, hooks);
+}
+
 export function stopSpeaking() {
   request += 1;
   if (typeof window === "undefined") return;
-  window.speechSynthesis?.cancel();
+  try {
+    window.speechSynthesis?.cancel();
+  } catch {
+    // Ignore a missing or locked speech engine.
+  }
+}
+
+if (typeof window !== "undefined" && window.speechSynthesis) {
+  installVoiceListener(window.speechSynthesis);
 }
