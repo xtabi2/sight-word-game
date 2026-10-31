@@ -7,6 +7,7 @@ export default async function middleware(request) {
   const res = await handle(request, {
     FAMILY_PIN: process.env.FAMILY_PIN,
     PIN_COOKIE_SECRET: process.env.PIN_COOKIE_SECRET,
+    FAMILY_PIN_SECRET: process.env.FAMILY_PIN_SECRET,
   });
   return res ?? undefined; // undefined = continue to the site
 }
