@@ -59,3 +59,12 @@ npm run dev
 `npm run build` writes a static site to `dist/`.
 
 Speech uses the browser's built-in `speechSynthesis` API. No API key is required. A browser that blocks autoplay still speaks when the child taps the button.
+
+## Family PIN gate
+
+Every page is behind a family PIN (`middleware.js`, Vercel Routing Middleware; logic in `pin-gate/gate.mjs`, tests in `pin-gate/gate.unit.mjs`).
+
+- Needs Vercel env vars `FAMILY_PIN` and `PIN_COOKIE_SECRET` (production + preview). Without them the site stays locked.
+- `/__pin` is the PIN pad, `/__pin/verify` checks the PIN (constant-time) and sets a signed, httpOnly cookie for one year. Static assets are not gated.
+- Wrong PINs wait about 1 second; 5 wrong tries lock the pad for 5 minutes.
+- Changing `FAMILY_PIN` or `PIN_COOKIE_SECRET` signs every device out.
